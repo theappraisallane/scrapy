@@ -1174,6 +1174,15 @@ Type of priority queue used by the scheduler. Another available type is
 domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
+.. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
+
+SCRAPER_SLOT_MAX_ACTIVE_SIZE
+----------------------------
+Default: ``5000000``
+
+Maximum size (in bytes) which the scraper can handle at once. Change this setting
+if your requests will have a body larger than this amount.
+
 .. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS
