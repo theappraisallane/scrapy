@@ -4,6 +4,7 @@ Downloader Middleware manager
 See documentation in docs/topics/downloader-middleware.rst
 """
 import six
+import types
 
 from twisted.internet import defer
 
@@ -35,7 +36,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         def process_request(request):
             for method in self.methods['process_request']:
                 response = yield method(request=request, spider=spider)
-                assert response is None or isinstance(response, (Response, Request)), \
+                assert response is None or isinstance(response, (Response, Request, types.GeneratorType)), \
                         'Middleware %s.process_request must return None, Response or Request, got %s' % \
                         (six.get_method_self(method).__class__.__name__, response.__class__.__name__)
                 if response:
@@ -51,7 +52,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             for method in self.methods['process_response']:
                 response = yield method(request=request, response=response,
                                         spider=spider)
-                assert isinstance(response, (Response, Request)), \
+                assert isinstance(response, (Response, Request, types.GeneratorType)), \
                     'Middleware %s.process_response must return Response or Request, got %s' % \
                     (six.get_method_self(method).__class__.__name__, type(response))
                 if isinstance(response, Request):
@@ -64,7 +65,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             for method in self.methods['process_exception']:
                 response = yield method(request=request, exception=exception,
                                         spider=spider)
-                assert response is None or isinstance(response, (Response, Request)), \
+                assert response is None or isinstance(response, (Response, Request, types.GeneratorType)), \
                     'Middleware %s.process_exception must return None, Response or Request, got %s' % \
                     (six.get_method_self(method).__class__.__name__, type(response))
                 if response:
