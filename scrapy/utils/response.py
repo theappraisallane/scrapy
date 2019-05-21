@@ -57,7 +57,11 @@ def response_httprepr(response):
     if response.headers:
         s += response.headers.to_string() + b"\r\n"
     s += b"\r\n"
-    s += response.body
+    if isinstance(response.body, list):
+        for item in response.body:
+            s += bytes(item.encode("utf-8"))
+    else:
+        s += response.body
     return s
 
 
