@@ -38,7 +38,11 @@ class Slot(object):
         deferred = defer.Deferred()
         self.queue.append((response, request, deferred))
         if isinstance(response, Response):
-            self.active_size += max(len(response.body), self.MIN_RESPONSE_SIZE)
+            if isinstance(response.body, list):
+                for body in response.body:
+                    self.active_size += max(len(body), self.MIN_RESPONSE_SIZE)
+            else:
+                self.active_size += max(len(response.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size += self.MIN_RESPONSE_SIZE
         return deferred
@@ -51,7 +55,11 @@ class Slot(object):
     def finish_response(self, response, request):
         self.active.remove(request)
         if isinstance(response, Response):
-            self.active_size -= max(len(response.body), self.MIN_RESPONSE_SIZE)
+            if isinstance(response.body, list):
+                for body in response.body:
+                    self.active_size -= max(len(body), self.MIN_RESPONSE_SIZE)
+            else:
+                self.active_size -= max(len(response.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size -= self.MIN_RESPONSE_SIZE
 
@@ -77,7 +85,7 @@ class Scraper(object):
     @defer.inlineCallbacks
     def open_spider(self, spider):
         """Open the given spider for scraping and allocate resources for it"""
-        self.slot = Slot()
+        self.slot = Slot(self.crawler.settings.getint('SCRAPER_SLOT_MAX_ACTIVE_SIZE'))
         yield self.itemproc.open_spider(spider)
 
     def close_spider(self, spider):
