@@ -224,6 +224,7 @@ class ExecutionEngine(object):
 
     def _downloaded(self, response, slot, request, spider):
         slot.remove_request(request)
+        logger.info('[_downloaded] Downloaded %s pages in url: %s', len(response.body), request.url)
         return self.download(response, spider) \
                 if isinstance(response, Request) else response
 

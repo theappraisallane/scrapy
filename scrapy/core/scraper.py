@@ -45,6 +45,7 @@ class Slot(object):
                 self.active_size += max(len(response.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size += self.MIN_RESPONSE_SIZE
+        logger.info('Queued %s in spider', request.url)
         return deferred
 
     def next_response_request_deferred(self):
@@ -62,12 +63,19 @@ class Slot(object):
                 self.active_size -= max(len(response.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size -= self.MIN_RESPONSE_SIZE
+        logger.info('Finished parsing %s in spider', request.url)
 
     def is_idle(self):
         return not (self.queue or self.active)
 
     def needs_backout(self):
-        return self.active_size > self.max_active_size
+        backout = self.active_size > self.max_active_size
+        used_size = (self.active_size / self.max_active_size) * 100
+        used_size = "{0:.2f}%".format(used_size)
+        logger.info('Using %s/%s, %s', self.active_size, self.max_active_size, used_size)
+        msg = 'Needs backout' if backout else "Doesn't need backout"
+        logger.info(msg)
+        return backout
 
 
 class Scraper(object):
