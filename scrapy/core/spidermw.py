@@ -6,6 +6,7 @@ See documentation in docs/topics/spider-middleware.rst
 from itertools import chain, islice
 
 import six
+import logging
 from twisted.python.failure import Failure
 from scrapy.exceptions import _InvalidOutput
 from scrapy.middleware import MiddlewareManager
@@ -13,6 +14,9 @@ from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.python import MutableChain
 
+
+
+logger = logging.getLogger(__name__)
 
 def _isiterable(possible_iterator):
     return hasattr(possible_iterator, '__iter__')
@@ -40,8 +44,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 six.get_method_self(f).__class__.__name__,
                 six.get_method_function(f).__name__)
 
+        logger.info('Using function: %s', fname)
         def process_spider_input(response):
             for method in self.methods['process_spider_input']:
+                logger.info('[spider_input] Processing %s pages in url: %s', len(response.body), request.url)
                 try:
                     result = method(response=response, spider=spider)
                     if result is not None:
@@ -51,12 +57,14 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     raise
                 except Exception:
                     return scrape_func(Failure(), request, spider)
+            logger.info('[spider_input] Processing input for url: %s', request.url)
             return scrape_func(response, request, spider)
 
         def process_spider_exception(_failure, start_index=0):
             exception = _failure.value
             # don't handle _InvalidOutput exception
             if isinstance(exception, _InvalidOutput):
+                logger.info('[spider_exception] InvalidOutput in url: %s, %s', request.url, exception)
                 return _failure
             method_list = islice(self.methods['process_spider_exception'], start_index, None)
             for method_index, method in enumerate(method_list, start=start_index):
@@ -72,12 +80,14 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 else:
                     raise _InvalidOutput('Middleware {} must return None or an iterable, got {}' \
                                          .format(fname(method), type(result)))
+            logger.info('[spider_exception] Exception in url: %s, %s', request.url, exception)
             return _failure
 
         def process_spider_output(result, start_index=0):
             # items in this iterable do not need to go through the process_spider_output
             # chain, they went through it already from the process_spider_exception method
             recovered = MutableChain()
+            logger.info('[spider_output] Processing output for url: %s', request.url)
 
             def evaluate_iterable(iterable, index):
                 try:
@@ -107,6 +117,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     raise _InvalidOutput('Middleware {} must return an iterable, got {}' \
                                          .format(fname(method), type(result)))
 
+            logger.info('[spider_output] Processed output for url: %s', request.url)
             return chain(result, recovered)
 
         dfd = mustbe_deferred(process_spider_input, response)

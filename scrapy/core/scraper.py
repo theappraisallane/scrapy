@@ -158,6 +158,10 @@ class Scraper(object):
     def call_spider(self, result, request, spider):
         result.request = request
         dfd = defer_result(result)
+        if request.callback:
+            logger.info('Called request.callback %s', request.callback)
+        else:
+            logger.info('Called spider.parse')
         dfd.addCallbacks(callback=request.callback or spider.parse,
                          errback=request.errback,
                          callbackKeywords=request.cb_kwargs)
