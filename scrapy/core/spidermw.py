@@ -4,14 +4,10 @@ Spider Middleware manager
 See documentation in docs/topics/spider-middleware.rst
 """
 import six
-import logging
 from twisted.python.failure import Failure
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
-
-
-logger = logging.getLogger(__name__)
 
 def _isiterable(possible_iterator):
     return hasattr(possible_iterator, '__iter__')
@@ -40,7 +36,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 six.get_method_self(f).__class__.__name__,
                 six.get_method_function(f).__name__)
 
-        logger.info('Using function: %s', fname)
         def process_spider_input(response):
             for method in self.methods['process_spider_input']:
                 try:
@@ -50,9 +45,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                             'raise an exception, got %s ' \
                             % (fname(method), type(result))
                 except:
-                    logger.info('[spider_input] Processing %s pages in url: %s', len(response.body), request.url)
                     return scrape_func(Failure(), request, spider)
-            logger.info('[spider_input] Processing %s pages in url: %s', len(response.body), request.url)
             return scrape_func(response, request, spider)
 
         def process_spider_exception(_failure):
@@ -63,7 +56,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     'Middleware %s must returns None, or an iterable object, got %s ' % \
                     (fname(method), type(result))
                 if result is not None:
-                    logger.info('[spider_exception] Processing %s pages in url: %s', len(response.body), request.url)
                     return result
             return _failure
 
@@ -73,7 +65,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 assert _isiterable(result), \
                     'Middleware %s must returns an iterable object, got %s ' % \
                     (fname(method), type(result))
-
             return result
 
         dfd = mustbe_deferred(process_spider_input, response)
